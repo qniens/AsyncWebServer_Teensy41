@@ -35,13 +35,13 @@
 
 /////////////////////////////////////////////////
 
-#define ASYNC_WEBSERVER_TEENSY41_VERSION           "AsyncWebServer_Teensy41 v1.7.0"
+#define ASYNC_WEBSERVER_TEENSY41_VERSION           "AsyncWebServer_Teensy41 v1.8.0"
 
 #define ASYNC_WEBSERVER_TEENSY41_VERSION_MAJOR     1
-#define ASYNC_WEBSERVER_TEENSY41_VERSION_MINOR     7
+#define ASYNC_WEBSERVER_TEENSY41_VERSION_MINOR     8
 #define ASYNC_WEBSERVER_TEENSY41_VERSION_PATCH     0
 
-#define ASYNC_WEBSERVER_TEENSY41_VERSION_INT       1007000
+#define ASYNC_WEBSERVER_TEENSY41_VERSION_INT       1008000
 
 /////////////////////////////////////////////////
 
@@ -197,14 +197,25 @@ class AsyncWebHeader
     {
       if (!data) 
         return;
+
+      if (data.length() == 0)
+        return;
+
+      // CRLF injection protection (upstream fix from v3.7.9)
+      if (data.indexOf('\r') >= 0 || data.indexOf('\n') >= 0)
+        return;
         
       int index = data.indexOf(':');
       
-      if (index < 0) 
+      if (index <= 0) 
         return;
         
       _name = data.substring(0, index);
-      _value = data.substring(index + 2);
+      // Skip the colon and one optional whitespace
+      int valueStart = index + 1;
+      if (valueStart < (int)data.length() && data[valueStart] == ' ')
+        valueStart++;
+      _value = data.substring(valueStart);
     }
 
     /////////////////////////////////////////////////

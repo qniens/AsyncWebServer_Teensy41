@@ -167,6 +167,9 @@ const char* AsyncWebServerResponse::_responseCodeToString(int code)
     case 417:
       return "Expectation Failed";
 
+    case 429:
+      return "Too Many Requests";
+
     case 500:
       return "Internal Server Error";
 
@@ -243,6 +246,13 @@ void AsyncWebServerResponse::setContentType(const String& type)
 
 void AsyncWebServerResponse::addHeader(const String& name, const String& value)
 {
+  // CRLF injection protection (upstream fix from v3.7.9)
+  if (name.indexOf('\r') >= 0 || name.indexOf('\n') >= 0 ||
+      value.indexOf('\r') >= 0 || value.indexOf('\n') >= 0)
+  {
+    return;
+  }
+
   _headers.add(new AsyncWebHeader(name, value));
 }
 
@@ -267,7 +277,7 @@ String AsyncWebServerResponse::_assembleHead(uint8_t version)
 
   if (_sendContentLength)
   {
-    snprintf(buf, bufSize, "Content-Length: %d\r\n", _contentLength);
+    snprintf(buf, bufSize, "Content-Length: %zu\r\n", _contentLength);
     out.concat(buf);
   }
 

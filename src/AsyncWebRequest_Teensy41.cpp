@@ -69,6 +69,7 @@ AsyncWebServerRequest::AsyncWebServerRequest(AsyncWebServer* s, AsyncClient* c)
 }))
 , _multiParseState(0), _boundaryPosition(0), _itemStartIndex(0), _itemSize(0), _itemName(), _itemFilename(), _itemType()
 , _itemValue(), _itemBuffer(0), _itemBufferIndex(0), _itemIsFile(false), _tempObject(NULL)
+, _onDisconnectfn(nullptr)
 {
   c->onError([](void *r, AsyncClient * c, int8_t error)
   {
@@ -211,7 +212,7 @@ void AsyncWebServerRequest::_onData(void *buf, size_t len)
           {
             _isPlainPost = true;
           }
-          else if (_contentType == "text/plain" && __is_param_char(((char*)buf)[0]))
+          else if (_contentType.startsWith("text/plain") && __is_param_char(((char*)buf)[0]))
           {
             size_t i = 0;
 
@@ -272,12 +273,20 @@ void AsyncWebServerRequest::_removeNotInterestingHeaders()
   if (_interestingHeaders.containsIgnoreCase("ANY"))
     return; // nothing to do
 
+  // Collect headers to remove first to avoid modifying list during iteration
+  LinkedList<AsyncWebHeader *> toRemove([](AsyncWebHeader *) {});
+
   for (const auto& header : _headers)
   {
     if (!_interestingHeaders.containsIgnoreCase(header->name().c_str()))
     {
-      _headers.remove(header);
+      toRemove.add(header);
     }
+  }
+
+  for (const auto& header : toRemove)
+  {
+    _headers.remove(header);
   }
 }
 
@@ -491,10 +500,14 @@ bool AsyncWebServerRequest::_parseReqHeader()
 {
   int index = _temp.indexOf(':');
 
-  if (index)
+  if (index > 0)
   {
     String name = _temp.substring(0, index);
-    String value = _temp.substring(index + 2);
+    // Skip the colon and one optional whitespace
+    int valueStart = index + 1;
+    if (valueStart < (int)_temp.length() && _temp[valueStart] == ' ')
+      valueStart++;
+    String value = _temp.substring(valueStart);
 
     if (name.equalsIgnoreCase("Host"))
     {
