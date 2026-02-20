@@ -188,6 +188,9 @@ const char* AsyncWebServerResponse::_responseCodeToString(int code)
     case 505:
       return "HTTP Version not supported";
 
+    case 507:
+      return "Insufficient Storage";
+
     default:
       return "";
   }

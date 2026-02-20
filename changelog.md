@@ -33,15 +33,18 @@
 ### Releases v1.8.0
 
 1. **Security**: CRLF injection protection in HTTP headers (upstream fix GHSA-87j8-6f7g-h8wh from v3.7.9)
-2. **Bug fix**: Header parsing robustness - reject malformed headers, handle optional whitespace after colon (from v3.7.10)
-3. **Bug fix**: Initialize `_onDisconnectfn` to nullptr to prevent use of uninitialized callback (from v3.7.10)
-4. **Bug fix**: Add HTTP 429 Too Many Requests status code (from v3.8.0)
-5. **Bug fix**: Use `%zu` format specifier for `size_t` Content-Length to avoid truncation
-6. **Bug fix**: Handle `text/plain` POST with charset parameter using `startsWith` (from v3.8.1)
-7. **Bug fix**: Handle Safari fragmented WebSocket mask data across TCP packets (from v3.9.3 PR #353)
-8. **Bug fix**: Fix JSON deserialization buffer bounds - allocate null terminator byte (from v3.7.8 PR #184)
-9. **Bug fix**: Fix `_removeNotInterestingHeaders` modifying list during iteration
-10. **Bug fix**: Discard bytes received after Content-Length to prevent handler buffer overruns (from v3.7.2 PR #101)
+2. **Security**: Reject null bytes in HTTP headers to prevent header injection
+3. **Bug fix**: Header parsing robustness - reject malformed headers, handle optional whitespace after colon (from v3.7.10)
+4. **Bug fix**: Initialize `_onDisconnectfn` to nullptr to prevent use of uninitialized callback (from v3.7.10)
+5. **Bug fix**: Add HTTP 429 Too Many Requests and 507 Insufficient Storage status codes (from v3.8.0+)
+6. **Bug fix**: Use `%zu` format specifier for `size_t` Content-Length to avoid truncation
+7. **Bug fix**: Handle `text/plain` POST with charset parameter using `startsWith` (from v3.8.1)
+8. **Bug fix**: Handle Safari fragmented WebSocket mask data across TCP packets (from v3.9.3 PR #353)
+9. **Bug fix**: Fix JSON deserialization buffer bounds - allocate null terminator byte (from v3.7.8 PR #184)
+10. **Bug fix**: Fix `_removeNotInterestingHeaders` modifying list during iteration
+11. **Bug fix**: Discard bytes received after Content-Length to prevent handler buffer overruns (from v3.7.2 PR #101)
+12. **Bug fix**: Check `_parseReqHead()` return value and reject invalid HTTP methods and empty URLs
+13. **Bug fix**: Free `_itemBuffer` in request destructor to prevent memory leak
 
 ### Releases v1.7.0
 

@@ -134,6 +134,11 @@ AsyncWebServerRequest::~AsyncWebServerRequest()
   {
     free(_tempObject);
   }
+
+  if (_itemBuffer != NULL)
+  {
+    free(_itemBuffer);
+  }
 }
 
 /////////////////////////////////////////////////
@@ -151,6 +156,14 @@ void AsyncWebServerRequest::_onData(void *buf, size_t len)
 
       for (i = 0; i < len; i++)
       {
+        // Reject null bytes in headers (upstream security fix)
+        if (!str[i])
+        {
+          _parseState = PARSE_REQ_FAIL;
+          _client->close();
+          return;
+        }
+
         if (str[i] == '\n')
         {
           break;
@@ -443,6 +456,10 @@ bool AsyncWebServerRequest::_parseReqHead()
   {
     _method = HTTP_OPTIONS;
   }
+  else
+  {
+    return false;
+  }
 
   String g = String();
   index = u.indexOf('?');
@@ -455,6 +472,11 @@ bool AsyncWebServerRequest::_parseReqHead()
 
   _url = urlDecode(u);
   _addGetParams(g);
+
+  if (!_url.length())
+  {
+    return false;
+  }
 
   if (!_temp.startsWith("HTTP/1.0"))
     _version = 1;
@@ -933,8 +955,15 @@ void AsyncWebServerRequest::_parseLine()
     }
     else
     {
-      _parseReqHead();
-      _parseState = PARSE_REQ_HEADERS;
+      if (_parseReqHead())
+      {
+        _parseState = PARSE_REQ_HEADERS;
+      }
+      else
+      {
+        _parseState = PARSE_REQ_FAIL;
+        _client->close();
+      }
     }
 
     return;
