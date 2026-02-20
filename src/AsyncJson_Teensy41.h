@@ -422,7 +422,12 @@ class AsyncCallbackJsonWebHandler: public AsyncWebHandler
 
         if (total > 0 && request->_tempObject == NULL && total < _maxContentLength)
         {
-          request->_tempObject = malloc(total);
+          request->_tempObject = malloc(total + 1);
+
+          if (request->_tempObject != NULL)
+          {
+            ((uint8_t*)(request->_tempObject))[total] = 0;
+          }
         }
 
         if (request->_tempObject != NULL)

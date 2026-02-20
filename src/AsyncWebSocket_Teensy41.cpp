@@ -1000,7 +1000,7 @@ void AsyncWebSocketClient::_onData(void *pbuf, size_t plen)
       _pinfo.index = 0;
       _pinfo.final = (fdata[0] & 0x80) != 0;
       _pinfo.opcode = fdata[0] & 0x0F;
-      _pinfo.masked = (fdata[1] & 0x80) != 0;
+      _pinfo.masked = ((fdata[1] & 0x80) != 0) ? 1 : 0;
       _pinfo.len = fdata[1] & 0x7F;
       data += 2;
       plen -= 2;
@@ -1019,12 +1019,43 @@ void AsyncWebSocketClient::_onData(void *pbuf, size_t plen)
         data += 8;
         plen -= 8;
       }
+    }
 
-      if (_pinfo.masked)
+    if (_pinfo.masked)
+    {
+      // Read mask bytes - may be fragmented across packets (Safari fix from upstream v3.9.3)
+      size_t mask_offset = 0;
+
+      if (_pstate == 1 && _pinfo.index < 4)
       {
-        memcpy(_pinfo.mask, data, 4);
-        data += 4;
-        plen -= 4;
+        mask_offset = _pinfo.index;
+      }
+
+      while (mask_offset < 4 && plen > 0)
+      {
+        _pinfo.mask[mask_offset++] = *data++;
+        plen--;
+      }
+
+      if (mask_offset < 4)
+      {
+        if (_pinfo.opcode == WS_DISCONNECT && plen == 0)
+        {
+          // Safari close frame edge case: masked bit set but no mask data
+          _pinfo.masked = 0;
+          _pinfo.index = 0;
+        }
+        else
+        {
+          // Wait for more data
+          _pinfo.index = mask_offset;
+          _pstate = 1;
+          return;
+        }
+      }
+      else
+      {
+        _pinfo.index = 0;
       }
     }
 
