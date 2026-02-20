@@ -157,7 +157,7 @@ void AsyncWebServerRequest::_onData(void *buf, size_t len)
       for (i = 0; i < len; i++)
       {
         // Reject null bytes in headers (upstream security fix)
-        if (!str[i])
+        if (str[i] == '\0')
         {
           _parseState = PARSE_REQ_FAIL;
           _client->close();
